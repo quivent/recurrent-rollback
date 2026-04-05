@@ -438,7 +438,23 @@ class MyArchRollbackLayer:
     def set_state(self, s): self._state = s
 ```
 
-## 6. Limitations and Future Work
+## 6. Dispatch Barrier Analysis
+
+A critical discovery during optimization: the gap between theoretical bandwidth time (25.1ms) and actual GPU time (36.1ms) is dominated by **dispatch barriers between kernels**, not kernel execution overhead.
+
+```
+Matmul chain only:        22.4 ms  (weight reads, pipelined, no barriers)
+Matmul + norm chain:      31.0 ms  (+8.6ms from norm dispatch barriers)
+Full model:               36.1 ms  (+5.1ms from GDN, activations, reshapes)
+```
+
+Each dispatch barrier is a GPU pipeline stall: L2 cache coherency sync between the output of one kernel and the input of the next. Individually ~5-15us, but 500+ barriers per forward pass aggregate to ~14ms.
+
+**Key insight**: reducing dispatch count within a small subsystem (e.g., fusing 2 GDN T=1 calls into 1 T=2 call) shows 0ms improvement because those barriers are hidden behind adjacent matmul work. But reducing barriers **between matmuls** (fusing rms_norm into the matmul kernel) saves real time because those barriers are in the critical path.
+
+Measured: fusing rms_norm into quantized_matmul saves **2.0ms** (256 barrier eliminations) via custom kernel. Full MLX integration expected to save more.
+
+## 7. Limitations and Future Work
 
 ### When Split-Recurrence Rollback Doesn't Help
 
