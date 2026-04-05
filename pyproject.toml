@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "recurrent-rollback"
+version = "0.1.0"
+description = "Zero-cost speculative decoding rollback for hybrid attention/recurrent models"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{name = "Josh Kornreich"}]
+dependencies = ["mlx>=0.30"]
+
+[project.urls]
+Homepage = "https://github.com/claudebuildsapps/recurrent-rollback"
